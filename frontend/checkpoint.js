@@ -3,7 +3,7 @@
 //   checkpoint.html?room=Room-1&camera_id=cam-entry-1&checkpoint_type=entry
 //   checkpoint.html?room=Room-1&camera_id=cam-exit-1&checkpoint_type=exit
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://ds-pw3z.onrender.com";
 
 const params = new URLSearchParams(window.location.search);
 const ROOM = params.get("room") || "Room-1";
