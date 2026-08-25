@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <h1>Admin Dashboard</h1>
+    <div>
+      <span class="user-info" id="user-name"></span>
+      <button class="logout" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <!-- Overview stats -->
+    <div class="stat-strip">
+      <div class="stat-card"><div class="stat-number accent" id="stat-students">—</div><div class="stat-label">Students</div></div>
+      <div class="stat-card"><div class="stat-number accent" id="stat-teachers">—</div><div class="stat-label">Teachers</div></div>
+      <div class="stat-card"><div class="stat-number accent" id="stat-sections">—</div><div class="stat-label">Sections</div></div>
+      <div class="stat-card"><div class="stat-number green" id="stat-attendance">—</div><div class="stat-label">Today's Attendance %</div></div>
+    </div>
+
+    <!-- Manage Sections -->
+    <div class="card">
+      <h2>Manage Sections</h2>
+      <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+        <button class="primary" onclick="openAddSectionModal()">+ Add Section</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Section ID</th><th>Name</th><th>Room</th><th>Teacher</th><th>Students</th></tr>
+        </thead>
+        <tbody id="sections-body"></tbody>
+      </table>
+      <div id="sections-empty" style="display:none; color:var(--text-dim); padding:20px 0;">No sections found.</div>
+    </div>
+
+    <!-- Manage Users -->
+    <div class="card">
+      <h2>Manage Users</h2>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px;">Filter by role</label>
+        <select id="role-filter" onchange="filterUsers()" style="width:200px;">
+          <option value="">All</option>
+          <option value="student">Students</option>
+          <option value="teacher">Teachers</option>
+          <option value="admin">Admins</option>
+        </select>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th></tr>
+        </thead>
+        <tbody id="users-body"></tbody>
+      </table>
+      <div id="users-empty" style="display:none; color:var(--text-dim); padding:20px 0;">No users found.</div>
+    </div>
+
+    <!-- System Notifications -->
+    <div class="card">
+      <h2>System Notifications</h2>
+      <div id="admin-notifs-list"></div>
+      <div id="admin-notifs-empty" style="display:none; color:var(--text-dim);">No notifications.</div>
+    </div>
+
+  </div>
+
+  <!-- Add Section modal -->
+  <div id="add-section-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal">
+      <h3>Add Section</h3>
+      <label style="display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px;">Name</label>
+      <input type="text" id="new-section-name" placeholder="e.g. CS-A" />
+      <label style="display:block; font-size:13px; color:var(--text-dim); margin:14px 0 6px;">Room</label>
+      <input type="text" id="new-section-room" placeholder="e.g. Room 201" />
+      <div id="add-section-error" class="error-msg" style="display:none;"></div>
+      <div class="actions">
+        <button class="secondary" onclick="closeAddSectionModal()">Cancel</button>
+        <button class="primary" onclick="submitAddSection()">Add Section</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="admin-dashboard.js"></script>
+</body>
+</html>

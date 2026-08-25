@@ -34,10 +34,8 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     } else if (data.role === "teacher") {
       window.location.href = "teacher-dashboard.html";
     } else {
-      // admin — no dedicated dashboard built yet per spec (seed scripts
-      // cover admin needs for the hackathon build); send to teacher view
-      // as the closest existing screen, or replace with an admin page later.
-      window.location.href = "teacher-dashboard.html";
+      // admin
+      window.location.href = "admin-dashboard.html";
     }
   } catch (err) {
     errorEl.textContent = err.message;

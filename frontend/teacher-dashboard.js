@@ -1,7 +1,21 @@
 if (requireAuth("teacher")) {
   document.getElementById("user-name").textContent = getFullName();
+  loadSections();
   loadNotifications();
   loadSectionAttendance();
+}
+
+async function loadSections() {
+  try {
+    const sections = await apiFetch("/sections");
+    const sel = document.getElementById("section-id-input");
+    if (!sections || sections.length === 0) return;
+    sel.innerHTML = sections
+      .map((s) => `<option value="${s.id}">${s.name || "Section " + s.id}</option>`)
+      .join("");
+  } catch (_) {
+    // non-critical — keep the default option
+  }
 }
 
 let activeCorrectionRecordId = null;
