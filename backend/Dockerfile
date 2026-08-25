@@ -1,21 +1,31 @@
-# Example of what a standard Computer Vision Dockerfile looks like
+# 1. Use the official Python 3.10 slim image
 FROM python:3.10-slim
 
+# 2. Set the working directory inside the server
 WORKDIR /app
 
-# Install system dependencies required by OpenCV and MediaPipe
+# 3. Install system dependencies for OpenCV, MediaPipe, and dlib
+# (Includes the libgl1 fix and the cmake/build-essential fix)
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
     cmake \
-    build-essential
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy your requirements and install them
+# 4. Copy the requirements file into the server
 COPY requirements.txt .
+
+# 5. THE MAGIC FIX: Force the C++ compiler to use only 1 core
+# This stops Render from running out of RAM and crashing!
+ENV CMAKE_BUILD_PARALLEL_LEVEL=1
+
+# 6. Install the Python packages
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your app's code
+# 7. Copy all of your Python scripts (main.py, etc.) into the server
 COPY . .
 
-# Run the app (this command might differ based on your tutorial)
+# 8. Start the server (Binding to host 0.0.0.0 is required for Render)
+# NOTE: If your tutorial uses Flask instead of FastAPI, this might be CMD ["python", "main.py"]
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
