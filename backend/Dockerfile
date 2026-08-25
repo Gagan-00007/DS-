@@ -26,6 +26,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 7. Copy all of your Python scripts (main.py, etc.) into the server
 COPY . .
 
-# 8. Start the server (Binding to host 0.0.0.0 is required for Render)
-# NOTE: If your tutorial uses Flask instead of FastAPI, this might be CMD ["python", "main.py"]
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+# 8. Start the server AND seed the database first!
+# The "sh -c" lets us string two commands together with &&
+CMD ["sh", "-c", "python seed.py && uvicorn main:app --host 0.0.0.0 --port 10000"]
