@@ -1,0 +1,179 @@
+# Classroom Attendance — Seed + Dry-Run Plan
+
+## What's Already Done (verified)
+
+| Component | Status |
+|---|---|
+| All Python deps (`face_recognition`, `mediapipe`, `cv2`, `fastapi`, etc.) | ✅ Installed & importable |
+| Backend modules (auth, timetable, checkpoint pipeline, attendance_store, notifications) | ✅ Written |
+| Frontend (login, student/teacher dashboards, checkpoint page) | ✅ Written |
+| SQLite DB + all ORM models | ✅ Defined |
+
+The `AttributeError: 'MessageFactory' ... GetPrototype` line in mediapipe's stderr is a known harmless protobuf internal re-init warning — it prints but does **not** prevent import or usage.
+
+---
+
+## What We're Building Here
+
+Three things, in order:
+
+1. **`backend/seed.py`** — a one-shot script that:
+   - Wipes the existing (empty/stale) `attendance.db`
+   - Creates 2 sections (`10-B`, `10-C`)
+   - Creates 1 admin, 2 teachers, 4 students
+   - Generates synthetic face embeddings (128-d random unit vectors) for each student — no webcam needed; they're stored directly into `enrolled_faces` via the same JSON path `recognition.py` reads
+   - Creates timetable entries that are **active right now** (today's day-of-week, window around the current local time) so checkpoint scans find a live class immediately
+   - Seeds 8+ historical absent records for one student to trigger the notification demo
+   - Prints a summary table of all credentials
+
+2. **`backend/dry_run.py`** — a self-contained Python script that:
+   - Starts the FastAPI app in-process (using `TestClient` from `httpx`/`starlette`)
+   - Walks through the full scenario: login → timetable check → entry checkpoint → liveness → attendance log → correction + audit trail → monthly notification trigger
+   - Uses a synthetic frame burst (real face crop from a downloaded test image OR a programmatically generated face-like image) to drive the recognition step
+   - Prints a pass/fail for each step
+
+3. **Bug fixes found during code review** (two small issues to patch before running):
+   - `checkpoint.py` line 88: `AttendanceRecord.date == now.date()` — `now` is a `datetime` but `date` column is `DateTime`; comparing `.date()` against a `DateTime` column works in Python but produces wrong SQL in SQLAlchemy. Fix: compare `AttendanceRecord.date >= today_start` and `< today_end`.
+   - `main.py` `starlette` version conflict: installed `starlette==1.0.0` but `fastapi==0.115.0` requires `starlette>=0.37,<0.42` — this will cause an import error. Need to install compatible starlette.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Synthetic face embeddings for the dry run**: The seed script generates random 128-d unit vectors as "face embeddings" for test students. This means the live checkpoint scan from a real webcam **will not match** these students (a real face embedding won't match a random vector). This is intentional for the seed/dry-run — the dry_run script injects the *same* stored embedding back as the "query" so recognition passes. For the actual demo, you'll run `enroll.py` with real photos to replace the synthetic embeddings.
+>
+> If you want real photos seeded right now (so a webcam at the door can recognize people immediately), tell me and I'll add a `--photos` mode to `seed.py` that calls `enroll.py` under the hood.
+
+> [!WARNING]
+> **Starlette version mismatch**: `starlette==1.0.0` is installed but `fastapi==0.115.0` needs `starlette>=0.37,<0.42`. The plan includes downgrading starlette to `0.41.3` as the first step. This is a pure version pin — no API surface changes needed in the app code.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Timetable window**: The seed script will create a timetable entry for **today's day-of-week** with a 2-hour window centered on the time you run it (so `now - 30min` to `now + 90min`). This gives you a working class right away. Is that fine, or do you want a specific time slot (e.g., 09:00–09:50 IST)?
+
+> [!IMPORTANT]
+> **Real photos for enrollment**: Do you have actual photos of the demo participants to enroll now, or should we stick with synthetic embeddings for the dry run and enroll real faces separately before the demo?
+
+---
+
+## Proposed Changes
+
+### Fix 0 — Starlette version pin
+
+```
+python -m pip install "starlette>=0.37,<0.42"
+```
+
+No code changes needed.
+
+---
+
+### Fix 1 — `checkpoint.py`: date comparison bug
+
+#### [MODIFY] [checkpoint.py](file:///c:/Users/Nexus/Documents/Hack-2026/backend/checkpoint.py)
+
+Line 83–91: Replace the `.date()` comparison with explicit `datetime` bounds:
+
+```diff
+-    record = (
+-        db.query(AttendanceRecord)
+-        .filter(
+-            AttendanceRecord.student_id == result.student_id,
+-            AttendanceRecord.timetable_entry_id == active_class.id,
+-            AttendanceRecord.date == now.date(),
+-        )
+-        .first()
+-    )
++    today_start = datetime(now.year, now.month, now.day)
++    today_end = datetime(now.year, now.month, now.day + 1)
++    record = (
++        db.query(AttendanceRecord)
++        .filter(
++            AttendanceRecord.student_id == result.student_id,
++            AttendanceRecord.timetable_entry_id == active_class.id,
++            AttendanceRecord.date >= today_start,
++            AttendanceRecord.date < today_end,
++        )
++        .first()
++    )
+```
+
+---
+
+### Fix 2 — `checkpoint.py`: day boundary for `today_end`
+
+The `now.day + 1` above can overflow at end of month. Use `timedelta` instead:
+
+```python
+from datetime import timedelta
+today_start = datetime(now.year, now.month, now.day)
+today_end = today_start + timedelta(days=1)
+```
+
+---
+
+### New File — `backend/seed.py`
+
+#### [NEW] [seed.py](file:///c:/Users/Nexus/Documents/Hack-2026/backend/seed.py)
+
+Creates:
+- **Admin**: `admin@school.edu` / `admin123`
+- **Teacher 1** (teaches 10-B Physics): `teacher.physics@school.edu` / `teacher123`
+- **Teacher 2** (teaches 10-C Chemistry): `teacher.chem@school.edu` / `teacher123`
+- **4 Students in 10-B**: `asha@school.edu`, `bala@school.edu`, `cira@school.edu`, `dev@school.edu` — all with password `student123`
+- **Timetable entry**: Room `ROOM-101`, day = today, `now-30min` → `now+90min`, section=10-B, teacher=Physics
+- **Historical absent records** for Asha: 9 absences this month (to trigger notification demo)
+- Synthetic face embeddings (random 128-d unit vectors) for all 4 students
+
+---
+
+### New File — `backend/dry_run.py`
+
+#### [NEW] [dry_run.py](file:///c:/Users/Nexus/Documents/Hack-2026/backend/dry_run.py)
+
+Runs against the live uvicorn server (or in-process via `starlette.testclient`). Steps tested:
+
+| Step | Endpoint | Expected |
+|---|---|---|
+| Backend health | `GET /docs` | 200 |
+| Admin login | `POST /auth/login` | JWT with role=admin |
+| Teacher login | `POST /auth/login` | JWT with role=teacher |
+| Student login | `POST /auth/login` | JWT with role=student |
+| Active timetable | `GET /timetable/active?room=ROOM-101` | `active: true` |
+| Entry scan (synthetic embedding → recognition passes, liveness bypassed) | `POST /checkpoint/scan` | `marked_present` or `marked_late` |
+| Student attendance | `GET /attendance/me` | 1 record |
+| Section attendance | `GET /attendance/section/1` | 4 students |
+| Teacher correction | `PATCH /attendance/{id}` | corrected status |
+| Audit trail | `GET /attendance/{id}/audit` | 1 entry |
+| Monthly check trigger | `POST /notifications/run-monthly-check` | `notifications_created >= 1` |
+| Teacher notifications | `GET /notifications/me` | Asha's notification |
+
+> [!NOTE]
+> **Liveness for the dry run**: `detect_blink()` requires ≥3 frames with real facial landmarks for the EAR check. A synthetic frame burst (blank/solid images) will return `False` (no blink). Two options:
+> - **Option A (default)**: Temporarily add a `BYPASS_LIVENESS=1` env var check in `liveness.py` — returns `True` when set, so the dry run can exercise the rest of the pipeline. The env var is never set in production, and we explicitly test the spoof case with `BYPASS_LIVENESS` unset.
+> - **Option B**: Download a short real face video clip and use its frames as the burst.
+>
+> Plan uses Option A with a clear comment so it's easy to find and remove before demo day.
+
+---
+
+## Verification Plan
+
+### Automated (dry_run.py)
+- Run `python dry_run.py` — all 12 steps print `✅ PASS` or `❌ FAIL` with detail.
+- Expected: all pass. Any fail will print the response body for immediate diagnosis.
+
+### Manual (browser)
+1. Start backend: `uvicorn main:app --reload`
+2. Open `frontend/login.html` in browser
+3. Login as teacher → confirm teacher dashboard loads with section attendance
+4. Login as student (asha@school.edu) → confirm student view shows their records only
+5. Open `frontend/checkpoint.html` on a device with webcam at the door
+
+### Spoof test
+- With backend running and a class active, present a printed photo to the webcam
+- Confirm `spoof_suspected` is returned and logged as a `SecurityEvent`

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <h1>Teacher Dashboard</h1>
+    <div>
+      <span class="user-info" id="user-name"></span>
+      <button class="logout" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="card">
+      <h2>Notifications</h2>
+      <div id="notifications-list"></div>
+      <div id="notif-empty" style="display:none; color: var(--text-dim);">No notifications.</div>
+    </div>
+
+    <div class="card">
+      <h2>Class Attendance</h2>
+      <div style="display:flex; gap: 12px; margin-bottom: 16px; align-items: flex-end;">
+        <div style="flex:1;">
+          <label style="display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px;">Section ID</label>
+          <input type="number" id="section-id-input" value="1" />
+        </div>
+        <div style="flex:1;">
+          <label style="display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px;">Date (optional)</label>
+          <input type="date" id="date-input" />
+        </div>
+        <button class="primary" onclick="loadSectionAttendance()">Load</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Student</th><th>Date</th><th>Status</th><th>Entry</th><th>Exit</th><th>Confidence</th><th></th></tr>
+        </thead>
+        <tbody id="attendance-body"></tbody>
+      </table>
+      <div id="empty-msg" style="display:none; color: var(--text-dim); padding: 20px 0;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Monthly Absence Check</h2>
+      <p style="color: var(--text-dim); font-size: 14px;">
+        Manually trigger the monthly absence threshold check (recommended for demo reliability
+        rather than trusting real-time scheduling — see build notes).
+      </p>
+      <button class="secondary" onclick="triggerMonthlyCheck()">Run Now</button>
+      <span id="monthly-check-result" style="margin-left: 12px; color: var(--text-dim);"></span>
+    </div>
+  </div>
+
+  <!-- Correction modal -->
+  <div id="correction-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal">
+      <h3>Correct Attendance</h3>
+      <label style="display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px;">New Status</label>
+      <select id="correction-status">
+        <option value="present">Present</option>
+        <option value="late">Late</option>
+        <option value="left_early">Left Early</option>
+        <option value="absent">Absent</option>
+      </select>
+      <label style="display:block; font-size:13px; color:var(--text-dim); margin: 14px 0 6px;">Reason (required)</label>
+      <textarea id="correction-reason" rows="3" placeholder="e.g. recognized manually, camera angle issue"></textarea>
+      <div id="correction-error" class="error-msg" style="display:none;"></div>
+      <div class="actions">
+        <button class="secondary" onclick="closeCorrectionModal()">Cancel</button>
+        <button class="primary" onclick="submitCorrection()">Save Correction</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="teacher-dashboard.js"></script>
+</body>
+</html>

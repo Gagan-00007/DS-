@@ -1,0 +1,63 @@
+1. get_attendance_for_section Date Filter Fix (in 
+
+attendance_store.py
+)
+Confirmed by name: get_attendance_for_section is using the identical >= day_start / < day_end timedelta bounds filter:
+
+python
+if on_date:
+    if isinstance(on_date, str):
+        on_date = date_type.fromisoformat(on_date)
+    day_start = datetime(on_date.year, on_date.month, on_date.day)
+    day_end = day_start + timedelta(days=1)
+    query = query.filter(AttendanceRecord.date >= day_start, AttendanceRecord.date < day_end)
+Verification: Tested directly against the database (on_date = date(2026, 8, 1)). It successfully matches historical records (e.g. Asha's 2026-08-01 10:00:00 absence) instead of returning 0 records.
+
+2. MediaPipe Version Pin
+Confirmed: The dev environment has been pinned to mediapipe==0.10.14 and protobuf==4.25.3.
+
+import mediapipe as mp and mp.solutions.face_mesh.FaceMesh load cleanly without error.
+3. On-Time vs. Late Demo Check-ins
+Updated 
+
+seed.py
+ to seed two active timetable slots for the current time slot:
+
+ROOM-101 (Section 10-B, Physics): Class started 5 minutes ago (with a 15-minute grace window).
+Checkpoint scan at ROOM-101 returns marked_present (on-time)!
+ROOM-102 (Section 10-C, Chemistry): Class started 30 minutes ago (with a 15-minute grace window).
+Checkpoint scan at ROOM-102 returns marked_late (late)!
+Test Suite Execution Output (python dry_run.py)
+text
+=======================================================
+      CLASSROOM ATTENDANCE SYSTEM - 13 STEP DRY RUN      
+=======================================================
+Step 01: [PASS] Backend Health (GET /docs)
+         Status code: 200
+Step 02: [PASS] Admin Login
+         Token obtained for role: admin
+Step 03: [PASS] Teacher Login
+         Token obtained for role: teacher
+Step 04: [PASS] Student Login
+         Token obtained for role: student
+Step 05: [PASS] Active Timetable Lookup
+         Room ROOM-101 active for section 10-B (Physics)
+Step 06: [PASS] Entry Checkpoint Scan
+         Student Asha Sharma -> status: marked_present
+Step 07: [PASS] Student Attendance Retrieval
+         Retrieved 10 record(s) for Asha
+Step 08: [PASS] Section Attendance Retrieval
+         Retrieved 10 section record(s)
+Step 09: [PASS] Teacher Attendance Correction
+         Record 10 updated to status 'present'
+Step 10: [PASS] Audit Trail Inspection
+         Audit log verified: changed by Dr. Physics Teacher (Reason: 'Manual verification during dry run')
+Step 11: [PASS] Monthly Check Trigger
+         Triggered check: 1 notification(s) created
+Step 12: [PASS] Teacher Notifications Check
+         Notification received for student Asha Sharma: 'Asha Sharma has 9 absences in 2026-08 — above the 7/month threshold.'
+Step 13: [PASS] Spoof Detection Check
+         Status 'spoof_suspected' returned & SecurityEvent logged in DB (ID 1, camera=CAM-01)
+=======================================================
+  DRY RUN RESULTS: 13/13 PASSED, 0/13 FAILED
+=======================================================

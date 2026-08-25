@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+*.db
+backend/attendance.db
+.DS_Store

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Attendance</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <h1>My Attendance</h1>
+    <div>
+      <span class="user-info" id="user-name"></span>
+      <button class="logout" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="card">
+      <h2>Attendance History</h2>
+      <table id="attendance-table">
+        <thead>
+          <tr><th>Date</th><th>Status</th><th>Entry Time</th><th>Exit Time</th></tr>
+        </thead>
+        <tbody id="attendance-body"></tbody>
+      </table>
+      <div id="empty-msg" style="display:none; color: var(--text-dim); padding: 20px 0;">
+        No attendance records yet.
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="student-dashboard.js"></script>
+</body>
+</html>

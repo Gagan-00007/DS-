@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Checkpoint Camera</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="checkpoint-wrap">
+    <h2 id="checkpoint-label">Entry Checkpoint — Room-1</h2>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <div id="status" class="status-text status-idle">Idle</div>
+
+    <div class="card log-panel">
+      <h2>Recent Scans</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <script src="checkpoint.js"></script>
+</body>
+</html>

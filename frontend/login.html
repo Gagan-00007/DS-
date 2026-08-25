@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Attendance System — Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="card login-box">
+      <h1>Sign in</h1>
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="username" />
+
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password" />
+
+        <div style="margin-top: 20px;">
+          <button type="submit" class="primary" style="width: 100%;">Sign in</button>
+        </div>
+      </form>
+      <div id="error" class="error-msg" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>
