@@ -1,11 +1,11 @@
 /* ===== SmartFace AI — Admin Dashboard JS ===== */
 
 // ---- Auth guard ----
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('access_token');
 const role = localStorage.getItem('role');
 if (!token || role !== 'admin') { window.location.href = 'login.html'; }
 
-const fullName = localStorage.getItem('fullName') || 'Admin';
+const fullName = localStorage.getItem('full_name') || 'Admin';
 document.getElementById('adminName').textContent = fullName;
 document.getElementById('welcomeName').textContent = fullName;
 document.getElementById('adminAvatar').textContent = fullName.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
@@ -43,9 +43,9 @@ updateClock();
 
 // ---- Logout ----
 function logout() {
-  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
   localStorage.removeItem('role');
-  localStorage.removeItem('fullName');
+  localStorage.removeItem('full_name');
   window.location.href = 'login.html';
 }
 
