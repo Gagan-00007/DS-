@@ -38,3 +38,7 @@ numpy==1.26.4
 
 # Scheduled jobs
 apscheduler==3.10.4
+
+# Reports export (PDF + XLSX)
+openpyxl==3.1.5
+reportlab==4.2.5

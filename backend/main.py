@@ -28,7 +28,7 @@ import notifications
 import admin
 import timetable as timetable_engine
 from database import get_db, init_db
-from models import Role, User, AttendanceStatus
+from models import Role, User, AttendanceStatus, AuditEvent, AuditEventCategory
 
 app = FastAPI(title="Classroom Attendance API")
 
@@ -102,6 +102,10 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not user:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     token = auth.create_access_token(user)
+    # Log audit event
+    db.add(AuditEvent(user_id=user.id, category=AuditEventCategory.user_action,
+                      action="login", details=f"{user.full_name} logged in ({user.role.value})"))
+    db.commit()
     return LoginResponse(access_token=token, role=user.role.value, full_name=user.full_name)
 
 
@@ -146,7 +150,8 @@ def active_class(room: str, db: Session = Depends(get_db)):
         return {"active": False}
     return {
         "active": True,
-        "section": entry.section.name,
+        "department": entry.department.name,
+
         "subject": entry.subject,
         "room": entry.room,
         "start_time": entry.start_time.isoformat(),
@@ -174,13 +179,13 @@ def my_attendance(
     ]
 
 
-@app.get("/attendance/section/{section_id}")
-def section_attendance(
-    section_id: int, on_date: Optional[date_type] = None,
+@app.get("/attendance/department/{department_id}")
+def department_attendance(
+    department_id: int, on_date: Optional[date_type] = None,
     user: User = Depends(auth.require_role(Role.teacher, Role.admin)),
     db: Session = Depends(get_db),
 ):
-    records = attendance_store.get_attendance_for_section(db, section_id, on_date)
+    records = attendance_store.get_attendance_for_department(db, department_id, on_date)
     return [
         {
             "id": r.id, "student_name": r.student.user.full_name,

@@ -25,14 +25,14 @@ def get_attendance_for_student(db: Session, student_id: int) -> List[AttendanceR
     )
 
 
-def get_attendance_for_section(
-    db: Session, section_id: int, on_date: Optional[date_type] = None
+def get_attendance_for_department(
+    db: Session, department_id: int, on_date: Optional[date_type] = None
 ) -> List[AttendanceRecord]:
-    """Teacher view — all students in a section, optionally filtered to one date."""
+    """Teacher view — all students in a department, optionally filtered to one date."""
     query = (
         db.query(AttendanceRecord)
         .join(TimetableEntry, TimetableEntry.id == AttendanceRecord.timetable_entry_id)
-        .filter(TimetableEntry.section_id == section_id)
+        .filter(TimetableEntry.department_id == department_id)
     )
     if on_date:
         day_start = datetime(on_date.year, on_date.month, on_date.day)

@@ -1,6 +1,6 @@
 """
 Seed script for Classroom Attendance hackathon database.
-Populates sections, admin/teacher/student accounts, synthetic enrolled face embeddings,
+Populates departments, admin/teacher/student accounts, synthetic enrolled face embeddings,
 active timetable entries centered around the current time, and historical absence records.
 """
 
@@ -11,29 +11,30 @@ from datetime import datetime, time, timedelta
 
 from database import engine, Base, SessionLocal
 from models import (
-    User, Role, Section, Student, EnrolledFace, TimetableEntry,
-    AttendanceRecord, AttendanceStatus
+    User, Role, Department, Student, EnrolledFace, EnrolledFaceSample,
+    TimetableEntry, AttendanceRecord, AttendanceStatus,
+    AuditEvent, AuditEventCategory,
 )
 from auth import hash_password
 
 def seed_database():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    
+
     db = SessionLocal()
     try:
         print("=== SEEDING CLASSROOM ATTENDANCE DATABASE ===")
-        
-        # 2. Sections
-        sec_10b = Section(name='Computer Science')
-        sec_10c = Section(name='Mechanical Engineering')
-        db.add_all([sec_10b, sec_10c])
-        db.commit()
-        db.refresh(sec_10b)
-        db.refresh(sec_10c)
-        print(f"[+] Created Sections: Computer Science (id={sec_10b.id}), Mechanical Engineering (id={sec_10c.id})")
 
-        # 3. Admin user
+        # 1. Departments
+        dept_cs = Department(name='Computer Science')
+        dept_me = Department(name='Mechanical Engineering')
+        db.add_all([dept_cs, dept_me])
+        db.commit()
+        db.refresh(dept_cs)
+        db.refresh(dept_me)
+        print(f"[+] Created Departments: Computer Science (id={dept_cs.id}), Mechanical Engineering (id={dept_me.id})")
+
+        # 2. Admin user
         admin_user = User(
             username='ADMIN-001',
             email='admin@school.edu',
@@ -43,38 +44,38 @@ def seed_database():
         )
         db.add(admin_user)
 
-        # 4. Teachers
+        # 3. Teachers
         teacher_physics = User(
             username='TCH2026-007',
             email='teacher.physics@school.edu',
             hashed_password=hash_password('teacher123'),
-            full_name='Dr. Physics Teacher',
+            full_name='Dr. Rajesh Kumar',
             role=Role.teacher
         )
         teacher_chem = User(
             username='TCH2026-008',
             email='teacher.chem@school.edu',
             hashed_password=hash_password('teacher123'),
-            full_name='Prof. Chem Teacher',
+            full_name='Prof. Meena Iyer',
             role=Role.teacher
         )
         db.add_all([teacher_physics, teacher_chem])
         db.commit()
         print("[+] Created Admin and Teacher accounts")
 
-        # 5. Students
+        # 4. Students with new fields
         student_data = [
-            ('1AR24CS000', 'asha@school.edu', 'Asha Sharma', sec_10b.id),
-            ('1AR24CS001', 'bala@school.edu', 'Bala Kumar', sec_10b.id),
-            ('1AR24CS002', 'cira@school.edu', 'Cira Gupta', sec_10b.id),
-            ('1AR24CS003', 'dev@school.edu', 'Dev Patel', sec_10b.id),
-            ('1AR24CS004', 'ekta@school.edu', 'Ekta Verma', sec_10c.id),
+            ('1AR24CS000', 'asha@school.edu', 'Asha Sharma', dept_cs.id, '2024-25', 'A', '001', '9876543210'),
+            ('1AR24CS001', 'bala@school.edu', 'Bala Kumar', dept_cs.id, '2024-25', 'A', '002', '9876543211'),
+            ('1AR24CS002', 'cira@school.edu', 'Cira Gupta', dept_cs.id, '2024-25', 'B', '003', '9876543212'),
+            ('1AR24CS003', 'dev@school.edu', 'Dev Patel', dept_cs.id, '2024-25', 'B', '004', '9876543213'),
+            ('1AR24ME001', 'ekta@school.edu', 'Ekta Verma', dept_me.id, '2024-25', 'A', '001', '9876543214'),
         ]
-        
+
         seeded_students = []
         np.random.seed(42)
 
-        for username, email, full_name, sec_id in student_data:
+        for username, email, full_name, dept_id, acad_year, sec, roll, phone in student_data:
             user = User(
                 username=username,
                 email=email,
@@ -86,21 +87,32 @@ def seed_database():
             db.commit()
             db.refresh(user)
 
-            student = Student(user_id=user.id, section_id=sec_id)
+            student = Student(
+                user_id=user.id, department_id=dept_id,
+                academic_year=acad_year, section=sec,
+                roll_number=roll, phone_number=phone,
+            )
             db.add(student)
             db.commit()
             db.refresh(student)
 
             raw_vec = np.random.randn(128)
             norm_vec = (raw_vec / np.linalg.norm(raw_vec)).tolist()
-            
+
             face = EnrolledFace(
                 student_id=student.id,
                 embedding=json.dumps(norm_vec)
             )
             db.add(face)
+
+            # Seed a synthetic face sample for demo
+            sample = EnrolledFaceSample(
+                student_id=student.id,
+                image_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="  # 1x1 transparent PNG placeholder
+            )
+            db.add(sample)
             db.commit()
-            
+
             seeded_students.append((user, student, norm_vec))
             print(f"  - Enrolled student {full_name} ({email}) with synthetic 128-d face embedding")
 
@@ -108,16 +120,15 @@ def seed_database():
         with open(os.path.join(os.path.dirname(__file__), 'asha_synthetic_embedding.json'), 'w') as f:
             json.dump(asha_embedding, f)
 
-        # 6. Timetable Entries (active right now)
+        # 5. Timetable Entries (active right now)
         now = datetime.utcnow()
-        day_of_week = now.weekday()  # 0=Monday ... 6=Sunday
-        
-        # Slot 1: ROOM-101 (Section CS, Physics) - On Time slot (5 mins ago, 15 min grace window)
+        day_of_week = now.weekday()
+
         start_dt_1 = now - timedelta(minutes=5)
         end_dt_1 = now + timedelta(minutes=90)
-        
+
         active_entry_1 = TimetableEntry(
-            section_id=sec_10b.id,
+            department_id=dept_cs.id,
             teacher_id=teacher_physics.id,
             subject='Physics',
             room='ROOM-101',
@@ -127,13 +138,12 @@ def seed_database():
             late_grace_minutes=15,
             early_exit_buffer_minutes=10
         )
-        
-        # Slot 2: ROOM-102 (Section ME, Chemistry) - Late slot (30 mins ago, 15 min grace window)
+
         start_dt_2 = now - timedelta(minutes=30)
         end_dt_2 = now + timedelta(minutes=90)
-        
+
         active_entry_2 = TimetableEntry(
-            section_id=sec_10c.id,
+            department_id=dept_me.id,
             teacher_id=teacher_chem.id,
             subject='Chemistry',
             room='ROOM-102',
@@ -143,15 +153,15 @@ def seed_database():
             late_grace_minutes=15,
             early_exit_buffer_minutes=10
         )
-        
+
         db.add_all([active_entry_1, active_entry_2])
         db.commit()
         db.refresh(active_entry_1)
         db.refresh(active_entry_2)
-        print(f"[+] Created Active On-Time Timetable Slot: ROOM-101, Section CS, Physics (ID {active_entry_1.id})")
-        print(f"[+] Created Active Late Timetable Slot: ROOM-102, Section ME, Chemistry (ID {active_entry_2.id})")
+        print(f"[+] Created Active On-Time Timetable Slot: ROOM-101, Dept CS, Physics (ID {active_entry_1.id})")
+        print(f"[+] Created Active Late Timetable Slot: ROOM-102, Dept ME, Chemistry (ID {active_entry_2.id})")
 
-        # 7. Historical Absences for Asha (9 records)
+        # 6. Historical Absences for Asha (9 records)
         asha_student = seeded_students[0][1]
         absence_count = 0
         for day in range(1, 25):
@@ -168,11 +178,27 @@ def seed_database():
                     absence_count += 1
             except ValueError:
                 pass
-        
+
         db.commit()
         print(f"[+] Seeded {absence_count} historical absence records for Asha in current month ({now.strftime('%Y-%m')})")
+
+        # 7. Seed AuditEvent entries for activity stream demo
+        audit_events = [
+            AuditEvent(user_id=admin_user.id, category=AuditEventCategory.system,
+                       action="system_startup", details="SmartFace AI Engine started successfully"),
+            AuditEvent(user_id=admin_user.id, category=AuditEventCategory.user_action,
+                       action="login", details="System Admin logged in (admin)"),
+            AuditEvent(user_id=admin_user.id, category=AuditEventCategory.user_action,
+                       action="enroll_student", details="Enrolled student: Asha Sharma"),
+            AuditEvent(user_id=admin_user.id, category=AuditEventCategory.user_action,
+                       action="create_teacher", details="Created teacher: Dr. Rajesh Kumar"),
+        ]
+        db.add_all(audit_events)
+        db.commit()
+        print("[+] Seeded activity stream audit events")
+
         print("=== SEED COMPLETE ===")
-        
+
     finally:
         db.close()
 

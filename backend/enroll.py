@@ -1,13 +1,13 @@
 """
 Run this once per student, offline, before the event — NOT part of the
 live demo flow. Takes 2-3 reference photos, computes a face embedding,
-and links it to a Student record + Section roster.
+and links it to a Student record + Department roster.
 
 Usage:
     python enroll.py --email student@example.com --name "Asha Rao" \
-        --section "10-B" --photos photo1.jpg photo2.jpg photo3.jpg
+        --department "Computer Science" --photos photo1.jpg photo2.jpg photo3.jpg
 
-Prerequisite: the Section must already exist (create sections + teachers
+Prerequisite: the Department must already exist (create departments + teachers
 via a small seed script before running enrollment).
 """
 
@@ -18,7 +18,7 @@ import cv2
 import numpy as np
 
 from database import SessionLocal, init_db
-from models import User, Student, Section, EnrolledFace, Role
+from models import User, Student, Department, EnrolledFace, Role
 from auth import hash_password
 import recognition
 
@@ -30,15 +30,15 @@ def load_frame(path: str) -> np.ndarray:
     return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 
-def enroll_student(email: str, full_name: str, section_name: str, photo_paths: list[str],
+def enroll_student(email: str, full_name: str, department_name: str, photo_paths: list[str],
                     temp_password: str = "changeme123"):
     init_db()
     db = SessionLocal()
     try:
-        section = db.query(Section).filter(Section.name == section_name).first()
-        if section is None:
+        department = db.query(Department).filter(Department.name == department_name).first()
+        if department is None:
             raise ValueError(
-                f"Section '{section_name}' does not exist — create it first via a seed script."
+                f"Department '{department_name}' does not exist — create it first via a seed script."
             )
 
         existing_user = db.query(User).filter(User.email == email).first()
@@ -63,9 +63,9 @@ def enroll_student(email: str, full_name: str, section_name: str, photo_paths: l
             hashed_password=hash_password(temp_password),
         )
         db.add(user)
-        db.flush()  # get user.id before creating dependent rows
+        db.flush()
 
-        student = Student(user_id=user.id, section_id=section.id)
+        student = Student(user_id=user.id, department_id=department.id)
         db.add(student)
         db.flush()
 
@@ -73,7 +73,7 @@ def enroll_student(email: str, full_name: str, section_name: str, photo_paths: l
         db.add(face)
 
         db.commit()
-        print(f"Enrolled {full_name} ({email}) in section {section_name}. "
+        print(f"Enrolled {full_name} ({email}) in department {department_name}. "
               f"Temporary password: {temp_password}")
     finally:
         db.close()
@@ -83,8 +83,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enroll a student's face + account.")
     parser.add_argument("--email", required=True)
     parser.add_argument("--name", required=True)
-    parser.add_argument("--section", required=True)
+    parser.add_argument("--department", required=True)
     parser.add_argument("--photos", nargs="+", required=True)
     args = parser.parse_args()
 
-    enroll_student(args.email, args.name, args.section, args.photos)
+    enroll_student(args.email, args.name, args.department, args.photos)

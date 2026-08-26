@@ -57,15 +57,15 @@ def get_best_embedding_from_burst(frames: list[np.ndarray]) -> Optional[np.ndarr
 
 
 def recognize_against_roster(
-    db: Session, embedding: np.ndarray, section_id: int
+    db: Session, embedding: np.ndarray, department_id: int
 ) -> RecognitionResult:
-    """Match `embedding` only against students enrolled in `section_id` —
+    """Match `embedding` only against students enrolled in `department_id` —
     the roster the timetable engine resolved as active for this room/time.
     """
     roster_faces = (
         db.query(EnrolledFace)
         .join(Student, Student.id == EnrolledFace.student_id)
-        .filter(Student.section_id == section_id)
+        .filter(Student.department_id == department_id)
         .all()
     )
 

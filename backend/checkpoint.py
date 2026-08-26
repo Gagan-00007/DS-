@@ -63,7 +63,7 @@ def run_checkpoint_pipeline(
         return CheckpointResult(status="no_face", timestamp=now.isoformat())
 
     # 3. Recognize against the active class's roster only.
-    result = recognition.recognize_against_roster(db, embedding, active_class.section_id)
+    result = recognition.recognize_against_roster(db, embedding, active_class.department_id)
     if not result.matched:
         _log_security_event(db, SecurityEventType.unrecognized, camera_id, checkpoint_type)
         return CheckpointResult(status="unrecognized", timestamp=now.isoformat())

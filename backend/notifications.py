@@ -37,7 +37,7 @@ def check_and_notify(db: Session, student: Student, year: int, month: int) -> Li
     teacher_ids = {
         row.teacher_id
         for row in db.query(TimetableEntry)
-        .filter(TimetableEntry.section_id == student.section_id)
+        .filter(TimetableEntry.department_id == student.department_id)
         .all()
     }
 
