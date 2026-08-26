@@ -25,16 +25,17 @@ def seed_database():
         print("=== SEEDING CLASSROOM ATTENDANCE DATABASE ===")
         
         # 2. Sections
-        sec_10b = Section(name='10-B')
-        sec_10c = Section(name='10-C')
+        sec_10b = Section(name='Computer Science')
+        sec_10c = Section(name='Mechanical Engineering')
         db.add_all([sec_10b, sec_10c])
         db.commit()
         db.refresh(sec_10b)
         db.refresh(sec_10c)
-        print(f"[+] Created Sections: 10-B (id={sec_10b.id}), 10-C (id={sec_10c.id})")
+        print(f"[+] Created Sections: Computer Science (id={sec_10b.id}), Mechanical Engineering (id={sec_10c.id})")
 
         # 3. Admin user
         admin_user = User(
+            username='ADMIN-001',
             email='admin@school.edu',
             hashed_password=hash_password('admin123'),
             full_name='System Admin',
@@ -44,12 +45,14 @@ def seed_database():
 
         # 4. Teachers
         teacher_physics = User(
+            username='TCH2026-007',
             email='teacher.physics@school.edu',
             hashed_password=hash_password('teacher123'),
             full_name='Dr. Physics Teacher',
             role=Role.teacher
         )
         teacher_chem = User(
+            username='TCH2026-008',
             email='teacher.chem@school.edu',
             hashed_password=hash_password('teacher123'),
             full_name='Prof. Chem Teacher',
@@ -59,20 +62,21 @@ def seed_database():
         db.commit()
         print("[+] Created Admin and Teacher accounts")
 
-        # 5. Students in 10-B & 10-C
+        # 5. Students
         student_data = [
-            ('asha@school.edu', 'Asha Sharma', sec_10b.id),
-            ('bala@school.edu', 'Bala Kumar', sec_10b.id),
-            ('cira@school.edu', 'Cira Gupta', sec_10b.id),
-            ('dev@school.edu', 'Dev Patel', sec_10b.id),
-            ('ekta@school.edu', 'Ekta Verma', sec_10c.id),
+            ('1AR24CS000', 'asha@school.edu', 'Asha Sharma', sec_10b.id),
+            ('1AR24CS001', 'bala@school.edu', 'Bala Kumar', sec_10b.id),
+            ('1AR24CS002', 'cira@school.edu', 'Cira Gupta', sec_10b.id),
+            ('1AR24CS003', 'dev@school.edu', 'Dev Patel', sec_10b.id),
+            ('1AR24CS004', 'ekta@school.edu', 'Ekta Verma', sec_10c.id),
         ]
         
         seeded_students = []
         np.random.seed(42)
 
-        for email, full_name, sec_id in student_data:
+        for username, email, full_name, sec_id in student_data:
             user = User(
+                username=username,
                 email=email,
                 hashed_password=hash_password('student123'),
                 full_name=full_name,
@@ -108,7 +112,7 @@ def seed_database():
         now = datetime.utcnow()
         day_of_week = now.weekday()  # 0=Monday ... 6=Sunday
         
-        # Slot 1: ROOM-101 (Section 10-B, Physics) - On Time slot (5 mins ago, 15 min grace window)
+        # Slot 1: ROOM-101 (Section CS, Physics) - On Time slot (5 mins ago, 15 min grace window)
         start_dt_1 = now - timedelta(minutes=5)
         end_dt_1 = now + timedelta(minutes=90)
         
@@ -124,7 +128,7 @@ def seed_database():
             early_exit_buffer_minutes=10
         )
         
-        # Slot 2: ROOM-102 (Section 10-C, Chemistry) - Late slot (30 mins ago, 15 min grace window)
+        # Slot 2: ROOM-102 (Section ME, Chemistry) - Late slot (30 mins ago, 15 min grace window)
         start_dt_2 = now - timedelta(minutes=30)
         end_dt_2 = now + timedelta(minutes=90)
         
@@ -144,8 +148,8 @@ def seed_database():
         db.commit()
         db.refresh(active_entry_1)
         db.refresh(active_entry_2)
-        print(f"[+] Created Active On-Time Timetable Slot: ROOM-101, Section 10-B, Physics (ID {active_entry_1.id})")
-        print(f"[+] Created Active Late Timetable Slot: ROOM-102, Section 10-C, Chemistry (ID {active_entry_2.id})")
+        print(f"[+] Created Active On-Time Timetable Slot: ROOM-101, Section CS, Physics (ID {active_entry_1.id})")
+        print(f"[+] Created Active Late Timetable Slot: ROOM-102, Section ME, Chemistry (ID {active_entry_2.id})")
 
         # 7. Historical Absences for Asha (9 records)
         asha_student = seeded_students[0][1]

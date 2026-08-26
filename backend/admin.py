@@ -58,6 +58,7 @@ def create_section(req: SectionCreate, db: Session = Depends(get_db), user: User
 # ---------- Teachers ----------
 
 class TeacherCreate(BaseModel):
+    username: str
     email: str
     full_name: str
     password: str = "teacher123"
@@ -74,7 +75,7 @@ def create_teacher(req: TeacherCreate, db: Session = Depends(get_db), user: User
     if db.query(User).filter(User.email == req.email).first():
         raise HTTPException(status_code=400, detail="A user with this email already exists")
     teacher = User(
-        email=req.email, full_name=req.full_name, role=Role.teacher,
+        username=req.username, email=req.email, full_name=req.full_name, role=Role.teacher,
         hashed_password=hash_password(req.password),
     )
     db.add(teacher)
@@ -147,14 +148,14 @@ def list_students(db: Session = Depends(get_db), user: User = Depends(admin_only
     ]
 
 
-def _create_student_user(db: Session, email: str, full_name: str, section_id: int, password: str) -> Student:
-    if db.query(User).filter(User.email == email).first():
-        raise HTTPException(status_code=400, detail="A user with this email already exists")
+def _create_student_user(db: Session, username: str, email: str, full_name: str, section_id: int, password: str) -> Student:
+    if db.query(User).filter(User.username == username).first():
+        raise HTTPException(status_code=400, detail="A user with this username already exists")
     section = db.query(Section).filter(Section.id == section_id).first()
     if section is None:
         raise HTTPException(status_code=404, detail="Section not found")
 
-    user = User(email=email, full_name=full_name, role=Role.student, hashed_password=hash_password(password))
+    user = User(username=username, email=email, full_name=full_name, role=Role.student, hashed_password=hash_password(password))
     db.add(user)
     db.flush()
     student = Student(user_id=user.id, section_id=section.id)
@@ -182,6 +183,7 @@ def _save_embedding_or_fail(db: Session, student: Student, frames: List[np.ndarr
 
 @router.post("/students/enroll-upload")
 def enroll_student_upload(
+    username: str = Form(...),
     email: str = Form(...),
     full_name: str = Form(...),
     section_id: int = Form(...),
@@ -190,7 +192,7 @@ def enroll_student_upload(
     db: Session = Depends(get_db),
     user: User = Depends(admin_only),
 ):
-    student = _create_student_user(db, email, full_name, section_id, password)
+    student = _create_student_user(db, username, email, full_name, section_id, password)
 
     frames = []
     for photo in photos:
@@ -209,6 +211,7 @@ def enroll_student_upload(
 
 
 class EnrollWebcamRequest(BaseModel):
+    username: str
     email: str
     full_name: str
     section_id: int
@@ -222,7 +225,7 @@ def enroll_student_webcam(
     db: Session = Depends(get_db),
     user: User = Depends(admin_only),
 ):
-    student = _create_student_user(db, req.email, req.full_name, req.section_id, req.password)
+    student = _create_student_user(db, req.username, req.email, req.full_name, req.section_id, req.password)
 
     frames = []
     for b64_str in req.frames_base64:
