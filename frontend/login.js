@@ -48,10 +48,6 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     } else if (data.role === "teacher") {
       window.location.href = "teacher-dashboard.html";
     } else {
-<<<<<<< HEAD
-      // admin
-=======
->>>>>>> ba9f811 (Updated code and added new features)
       window.location.href = "admin-dashboard.html";
     }
     // Don't reset the button here — page is navigating away.
