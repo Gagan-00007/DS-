@@ -55,6 +55,15 @@ def root():
 @app.on_event("startup")
 def on_startup():
     init_db()
+    from database import SessionLocal
+    from models import User
+    import seed
+    db = SessionLocal()
+    try:
+        if db.query(User).count() == 0:
+            seed.seed_database()
+    finally:
+        db.close()
 
 
 # ---------- Schemas ----------
