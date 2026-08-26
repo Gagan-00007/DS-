@@ -25,6 +25,7 @@ import auth
 import attendance_store
 import checkpoint
 import notifications
+import admin
 import timetable as timetable_engine
 from database import get_db, init_db
 from models import Role, User, AttendanceStatus
@@ -35,6 +36,8 @@ app = FastAPI(title="Classroom Attendance API")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
+
+app.include_router(admin.router)
 
 frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 

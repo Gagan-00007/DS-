@@ -127,3 +127,13 @@ input, select, textarea {
 .stat-card .stat-number.amber { color: var(--amber); }
 .stat-card .stat-number.red { color: var(--red); }
 .stat-card .stat-number.accent { color: var(--accent); }
+<<<<<<< HEAD
+=======
+
+/* Admin enrollment modal — tab buttons */
+.tab-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+>>>>>>> ba9f811 (Updated code and added new features)
