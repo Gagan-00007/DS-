@@ -3,8 +3,7 @@
 // structure. Dashboard JS files (student-dashboard.js etc.) reference
 // these same global function names, so no changes needed there.
 
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-const API_BASE = isLocal ? "http://localhost:8000" : "https://ds-pw3z.onrender.com";
+const API_BASE = window.location.protocol === "file:" ? "http://localhost:8000" : window.location.origin;
 
 function getToken() {
   return localStorage.getItem("access_token");

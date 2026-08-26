@@ -1,7 +1,7 @@
 // Shared API helper used by every page except checkpoint.js (which is
 // unauthenticated — it runs on a door device, not a logged-in user).
 
-const API_BASE = "https://ds-pw3z.onrender.com"; // Render deployment
+const API_BASE = window.location.protocol === "file:" ? "http://localhost:8000" : window.location.origin;
 
 function getToken() {
   return localStorage.getItem("access_token");

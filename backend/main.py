@@ -46,10 +46,7 @@ if os.path.exists(frontend_path):
 
 @app.get("/")
 def root():
-    login_file = os.path.join(frontend_path, "login.html")
-    if os.path.exists(login_file):
-        return FileResponse(login_file)
-    return RedirectResponse(url="/docs")
+    return RedirectResponse(url="/frontend/login.html")
 
 
 @app.on_event("startup")
@@ -180,6 +177,7 @@ def my_attendance(
 
 
 @app.get("/attendance/department/{department_id}")
+@app.get("/attendance/section/{department_id}")
 def department_attendance(
     department_id: int, on_date: Optional[date_type] = None,
     user: User = Depends(auth.require_role(Role.teacher, Role.admin)),
